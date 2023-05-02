@@ -3,7 +3,7 @@
 
 -- Add your plugin name here:
 plugins = {
-	"fa_bb",
+--	"fa_bb", -- Bull Flash Accelerators
 }
 
 -- each "plugin" is a lua module that is required to implement a get_plugin() function
