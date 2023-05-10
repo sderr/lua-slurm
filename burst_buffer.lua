@@ -147,7 +147,7 @@ function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
 
 	-- plugins might want to touch the same variables, for instance, $PATH
 	-- So, rather than having each plugin simply writing its vars to path_file,
-	-- we setup and dict. plugins that want to touch a "common" variable must check
+	-- we setup a dict. plugins that want to touch a "common" variable must check
 	-- if the variable already exists and modify them, rather than simply overwriting them.
 	local export_vars = {}
 	local rc, output = call_plugins("paths", job_id, job_script, export_vars, uid, gid, job_info)

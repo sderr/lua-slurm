@@ -17,7 +17,7 @@ sched.CO_ERROR = 3
 -- If the command was killed, exit_status is -signum
 --
 -- Note: This function is non-blocking and will yield when needed. In that case if will
--- yield 2 values: CO_YIELDS, fd
+-- yield 2 values: CO_YIELDS, { fd }
 -- where fd can be polled.
 --
 -- Note: There is no clear error if the command fails to execute. There will simply be no
