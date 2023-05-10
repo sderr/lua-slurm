@@ -50,7 +50,7 @@ function sched.run_synchronous_command(argv)
 		end
 		output = output .. r
 	end
-	
+
 	local epid, state, rc = wait(pid)
 	if (state == "killed") then
 		-- turn signum into negative rc

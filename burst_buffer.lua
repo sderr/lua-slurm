@@ -11,7 +11,7 @@ plugins_dir = "bb"
 
 -- each "plugin" is a lua module that is required to implement a get_plugin() function
 -- which returns something like this table:
--- 
+--
 -- 	local plugin = {
 -- 		name         = "myplugin",
 -- 		job_process  = job_process_func,
@@ -202,6 +202,6 @@ end
 function slurm_bb_get_status(uid, gid, ...)
 	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
 		lua_script_name, uid, gid)
-	
+
 	return call_plugins("get_status", uid, gid, ...)
 end
