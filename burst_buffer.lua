@@ -3,13 +3,17 @@
 
 -- Add your plugin name here:
 plugins = {
---	"fa_bb", -- Bull Flash Accelerators
+--	"flash_accelerators",
+	"example1",
 }
+
+plugins_dir = "bb"
 
 -- each "plugin" is a lua module that is required to implement a get_plugin() function
 -- which returns something like this table:
---
+-- 
 -- 	local plugin = {
+-- 		name         = "myplugin",
 -- 		job_process  = job_process_func,
 -- 		job_teardown = job_teardown_func,
 -- 		setup        = setup_func,
@@ -31,30 +35,62 @@ plugins = {
 -- 	or slurm.ERROR with an error message
 --
 
+package.path = "bb/?.lua;" .. package.path
+
 ---------------- No user serviceable parts below (hopefully) ------------
 
 function build_plugins_table()
 	local bb_table = {}
 	for idx, plugin_name in ipairs(plugins) do
+		local prev_path = package.path
+		local U = require("bb_utils")
+		package.path = U.safe_strcat(plugins_dir, "/", plugin_name, "/?.lua;", package.path)
 		local mod = require(plugin_name)
 		table.insert(bb_table, mod.get_plugin())
+		package.path = prev_path
 	end
 	return bb_table
 end
 
 function call_plugins(function_name, ...)
+	local sched = require("bb_sched")
 	local bb_plugins = build_plugins_table()
-	local all_output = ""
+	local tasks_todo = {}
 	for i, plugin in ipairs(bb_plugins) do
-		func = plugin[function_name]
+		local func = plugin[function_name]
 		if (func) then
-			local rc, msg = func(...)
-			if (rc == slurm.ERROR) then
-				return rc, msg
-			end
+			local name = plugin["name"]
+			sched.add_task(tasks_todo, plugin, name, func, ...)
+		end
+	end
+
+	local tasks_done = sched.run_main_tasks(tasks_todo)
+
+	local all_output = ""
+	for name, task in pairs(tasks_done) do
+		-- first check any possible lua runtime error in that task
+		local state = task["state"]
+		if (state == sched.CO_ERROR) then
+			local errmsg = task["error"]
+			slurm.log_error("lua/%s: task %s failed: %s",
+				function_name, name, errmsg)
+			return slurm.ERROR, errmsg
+		end
+
+		-- unpack the task result and add it to the global output
+		local result = task["result"]
+		local rc, msg = table.unpack(result)
+		if (rc == slurm.ERROR) then
+			return rc, msg
+		elseif (rc == slurm.SUCCESS) then
 			if (msg) then
 				all_output = all_output .. msg
 			end
+		else
+			local errmsg = string.format("lua/%s: task %s returned %s instead of slurm.SUCCESS or slurm.ERROR",
+				function_name, name, tostring(rc))
+			slurm.log_error(errmsg)
+			return slurm.ERROR, errmsg
 		end
 	end
 	return slurm.SUCCESS, all_output
@@ -111,7 +147,7 @@ function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
 
 	-- plugins might want to touch the same variables, for instance, $PATH
 	-- So, rather than having each plugin simply writing its vars to path_file,
-	-- we setup a dict. plugins that want to touch a "common" variable must check
+	-- we setup and dict. plugins that want to touch a "common" variable must check
 	-- if the variable already exists and modify them, rather than simply overwriting them.
 	local export_vars = {}
 	local rc, output = call_plugins("paths", job_id, job_script, export_vars, uid, gid, job_info)
@@ -166,6 +202,6 @@ end
 function slurm_bb_get_status(uid, gid, ...)
 	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
 		lua_script_name, uid, gid)
-
+	
 	return call_plugins("get_status", uid, gid, ...)
 end
