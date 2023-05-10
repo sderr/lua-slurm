@@ -68,7 +68,7 @@ end
 -- Tasks which end are moved from tasks_todo to tasks_done
 -- @param tasks_todo Table with tasks to run
 -- @param tasks_done Table with the tasks which ended
--- @return true if all tasks done, false otherwise
+-- @return list of fds to poll
 --
 -- A task is a table which looks like this: {
 --     thread = coroutine created
