@@ -3,7 +3,7 @@
 
 -- Add your plugin name here:
 plugins = {
---	"flash_accelerators",
+	--"flash_accelerators",
 	"example1",
 }
 
@@ -39,28 +39,23 @@ package.path = "bb/?.lua;" .. package.path
 
 ---------------- No user serviceable parts below (hopefully) ------------
 
-function build_plugins_table()
-	local bb_table = {}
-	for idx, plugin_name in ipairs(plugins) do
-		local prev_path = package.path
-		local U = require("bb_utils")
-		package.path = U.safe_strcat(plugins_dir, "/", plugin_name, "/?.lua;", package.path)
-		local mod = require(plugin_name)
-		table.insert(bb_table, mod.get_plugin())
-		package.path = prev_path
-	end
-	return bb_table
+function load_plugin(plugin_name)
+	local prev_path = package.path
+	local U = require("bb_utils")
+	package.path = U.safe_strcat(plugins_dir, "/", plugin_name, "/?.lua;", package.path)
+	local mod = require(plugin_name)
+	package.path = prev_path
+	return mod
 end
 
 function call_plugins(function_name, ...)
 	local sched = require("bb_sched")
-	local bb_plugins = build_plugins_table()
 	local tasks_todo = {}
-	for i, plugin in ipairs(bb_plugins) do
+	for _, plugin_name in ipairs(plugins) do
+		local plugin = load_plugin(plugin_name)
 		local func = plugin[function_name]
 		if (func) then
-			local name = plugin["name"]
-			sched.add_task(tasks_todo, plugin, name, func, ...)
+			sched.add_task(tasks_todo, plugin, plugin_name, func, ...)
 		end
 	end
 
@@ -108,7 +103,7 @@ function slurm_bb_job_process(job_script, uid, gid, job_info)
 	slurm.log_info("%s: slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
 		lua_script_name, job_script, uid, gid)
 
-	return call_plugins("job_process", job_script, uid, gid, job_info)
+	return call_plugins("bb_job_process", job_script, uid, gid, job_info)
 end
 
 -- slurm_bb_job_teardown
@@ -119,7 +114,7 @@ function slurm_bb_job_teardown(job_id, job_script, hurry, uid, gid)
 	slurm.log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script, hurry, uid, gid)
 
-	return call_plugins("job_teardown", job_id, job_script, hurry, uid, gid)
+	return call_plugins("bb_job_teardown", job_id, job_script, hurry, uid, gid)
 end
 
 
@@ -130,7 +125,7 @@ function slurm_bb_setup(job_id, uid, gid, pool, bb_size, job_script, job_info)
 	slurm.log_info("%s: slurm_bb_setup(). job id:%s, uid: %s, gid:%s, pool:%s, size:%s, job script:%s",
 		lua_script_name, job_id, uid, gid, pool, bb_size, job_script)
 
-	return call_plugins("setup", job_id, uid, gid, pool, bb_size, job_script, job_info)
+	return call_plugins("bb_setup", job_id, uid, gid, pool, bb_size, job_script, job_info)
 end
 
 -- slurm_bb_paths (SYNCHRONOUS)
@@ -150,7 +145,7 @@ function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
 	-- we setup a dict. plugins that want to touch a "common" variable must check
 	-- if the variable already exists and modify them, rather than simply overwriting them.
 	local export_vars = {}
-	local rc, output = call_plugins("paths", job_id, job_script, export_vars, uid, gid, job_info)
+	local rc, output = call_plugins("bb_paths", job_id, job_script, export_vars, uid, gid, job_info)
 
 	if (rc == slurm.SUCCESS) then
 		io.output(path_file)
@@ -175,18 +170,18 @@ function slurm_bb_real_size(job_id, uid, gid, job_info)
 end
 
 function slurm_bb_data_in(job_id, job_script, uid, gid, job_info)
-	return call_plugins("data_in", job_id, job_script, uid, gid, job_info)
+	return call_plugins("bb_data_in", job_id, job_script, uid, gid, job_info)
 end
 function slurm_bb_pre_run(job_id, job_script, uid, gid, job_info)
-	return call_plugins("pre_run", job_id, job_script, uid, gid, job_info)
+	return call_plugins("bb_pre_run", job_id, job_script, uid, gid, job_info)
 end
 
 function slurm_bb_post_run(job_id, job_script, uid, gid, job_info)
-	return call_plugins("post_run", job_id, job_script, uid, gid, job_info)
+	return call_plugins("bb_post_run", job_id, job_script, uid, gid, job_info)
 end
 
 function slurm_bb_data_out(job_id, job_script, uid, gid, job_info)
-	return call_plugins("data_out", job_id, job_script, uid, gid, job_info)
+	return call_plugins("bb_data_out", job_id, job_script, uid, gid, job_info)
 end
 
 -- slurm_bb_get_status
@@ -203,5 +198,5 @@ function slurm_bb_get_status(uid, gid, ...)
 	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
 		lua_script_name, uid, gid)
 
-	return call_plugins("get_status", uid, gid, ...)
+	return call_plugins("bb_get_status", uid, gid, ...)
 end

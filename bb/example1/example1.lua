@@ -50,27 +50,13 @@ function ex1.bb_paths(job_id, job_script, export_vars_dict, uid, gid, job_info)
 	return slurm.SUCCESS
 end
 
-function ex1.list_bbs(uid, gid, ...)
+function ex1.bb_get_status(uid, gid, ...)
 	local str = ""
 	local list = ex1_core.get_bbs()
 	for id, bb in pairs(list) do
 		str = str .. "EX1BB: " .. id .. ":" .. bb .."\n"
 	end
 	return slurm.SUCCESS, str
-end
-
-
-function ex1.get_plugin()
-	local plugin = {
-		name         = "ex1",
-		job_process  = ex1.bb_job_process,
-		setup        = ex1.bb_setup,
-		data_in      = ex1.bb_data_in,
-		job_teardown = ex1.bb_job_teardown,
-		paths        = ex1.bb_paths,
-		get_status   = ex1.list_bbs
-	}
-	return plugin
 end
 
 return ex1
