@@ -9,30 +9,35 @@ plugins = {
 
 plugins_dir = "bb"
 
--- each "plugin" is a lua module that is required to implement a get_plugin() function
--- which returns something like this table:
+-- Each "plugin" is a lua module.
+-- The plugin "foo" must be in the directory $plugins_dir/foo and have a main file foo.lua which
+-- implements some of these functions:
 --
--- 	local plugin = {
--- 		name         = "myplugin",
--- 		job_process  = job_process_func,
--- 		job_teardown = job_teardown_func,
--- 		setup        = setup_func,
--- 		paths        = paths_func,
--- 		data_in      = data_in_func,
--- 		pre_run      = pre_run_func,
--- 		post_run     = post_run_func,
--- 		data_out     = data_out_func,
--- 		get_status   = get_status_func
--- 	}
+-- 		slurm_bb_job_process
+-- 		slurm_bb_job_teardown
+-- 		slurm_bb_setup
+-- 		slurm_bb_paths
+-- 		slurm_bb_data_in
+-- 		slurm_bb_pre_run
+-- 		slurm_bb_post_run
+-- 		slurm_bb_data_out
+-- 		slurm_bb_get_status
 --
--- 	All the functions declared in the plugin table take the same
--- 	parameters as the corresponding function called by slurm
--- 	(i.e for job_process, see slurm_bb_job_process()), except:
--- 	- paths() which gets a dict instead of the path_file. See comment
+-- 	All these functions same parameters as the corresponding function called by slurm
+-- 	except:
+-- 	- slurm_bb_paths() which gets a dict instead of the path_file. See comment
 -- 	  in slurm_bb_paths() below.
 --
 -- 	The functions are supposed to return slurm.SUCCESS (and possibly a message),
 -- 	or slurm.ERROR with an error message
+--
+-- 	All functions are optional.
+--
+-- 	Functions must NOT block. If they need to wait for outside events, they may call:
+--
+-- 		coroutine.yield(sched.CO_YIELD, { list of fds to poll for read (possibly empty) })
+--
+-- 	sched.CO_YIELD is defined in bb/bb_sched.lua
 --
 
 package.path = "bb/?.lua;" .. package.path
