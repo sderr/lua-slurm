@@ -198,7 +198,7 @@ end
 -- This function is called after the job is scheduled but before the
 -- job starts running when the job is in a "running + configuring" state.
 --
--- The file specfied by path_file is an empty file that must be filled with
+-- The file specified by path_file is an empty file that must be filled with
 -- the environment variables needed by the job
 function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
 	safe_log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",

@@ -143,7 +143,7 @@ function bb_sched.add_task(tasks_todo, name, func, ...)
 end
 
 -- Run a list of tasks, once, and waits...
--- + either until theres's some input data in one for the file descriptors yielded by the tasks
+-- + either until there's some input data in one of the file descriptors yielded by the tasks
 -- + or until a polling timeout expires.
 function bb_sched.schedule_main(tasks_todo, tasks_done)
 	local fds = bb_sched.run_tasks_once(tasks_todo, tasks_done)
