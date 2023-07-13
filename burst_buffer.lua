@@ -61,7 +61,15 @@ local function call_plugins(function_name, ...)
 	local sched = require("bb_sched")
 	local tasks_todo = {}
 	for _, plugin_name in ipairs(plugins) do
-		local plugin = load_plugin(plugin_name)
+		local ok, plugin = pcall(load_plugin, plugin_name)
+		if (not ok) then
+			local err = plugin -- return value from pcall
+			local errmsg = string.format("failed to load plugin %s -- check system configuration",
+				plugin_name)
+			slurm.log_error("lua/%s: %s : %s",
+				function_name, errmsg, err)
+			return slurm.ERROR, errmsg
+		end
 		local func = plugin[function_name]
 		if (func) then
 			sched.add_task(tasks_todo, plugin_name, func, ...)
