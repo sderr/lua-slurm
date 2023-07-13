@@ -7,7 +7,11 @@ plugins = {
 	--"example1",
 }
 
-plugins_dir = "bb"
+slurm_lua_root = os.getenv("SLURM_LUA_ROOT")
+if (slurm_lua_root == nil) then
+	slurm_lua_root = "/etc/slurm"
+end
+plugins_dir = "bb" -- subdirectory in slurm_lua_root where the scripts are
 
 -- Each "plugin" is a lua module.
 -- The plugin "foo" must be in the directory $plugins_dir/foo and have a main file foo.lua which
@@ -40,14 +44,14 @@ plugins_dir = "bb"
 -- 	sched.CO_YIELD is defined in bb/bb_sched.lua
 --
 
-package.path = "bb/?.lua;" .. package.path
+package.path = slurm_lua_root .. "/bb/?.lua;" .. package.path
 
 ---------------- No user serviceable parts below (hopefully) ------------
 
 function load_plugin(plugin_name)
 	local prev_path = package.path
 	local U = require("bb_utils")
-	package.path = U.safe_strcat(plugins_dir, "/", plugin_name, "/?.lua;", package.path)
+	package.path = U.safe_strcat(slurm_lua_root, "/", plugins_dir, "/", plugin_name, "/?.lua;", package.path)
 	local mod = require(plugin_name)
 	package.path = prev_path
 	return mod
