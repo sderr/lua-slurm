@@ -98,6 +98,19 @@ end
 
 lua_script_name="burst_buffer.lua" -- for tracing purposes
 
+-- safe version of slurm.log_info which accepts nil values
+-- this is useful when running with slurm 22 which does not pass all parameters
+function safe_log_info(format, ...)
+	local args = table.pack(...)
+	local n = args["n"]
+	for i=1,n do
+		if (args[i] == nil) then
+			args[i] = "nil"
+		end
+	end
+	slurm.log_info(format, table.unpack(args))
+end
+
 -- slurm_bb_job_process (SYNCHRONOUS)
 --
 -- This function is called on job submission.
@@ -105,7 +118,7 @@ lua_script_name="burst_buffer.lua" -- for tracing purposes
 -- If this function returns an error, the job is rejected and the second return
 -- value (if given) is printed where salloc, sbatch, or srun was called.
 function slurm_bb_job_process(job_script, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
+	safe_log_info("%s: slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
 		lua_script_name, job_script, uid, gid)
 
 	return call_plugins("bb_job_process", job_script, uid, gid, job_info)
@@ -116,7 +129,7 @@ end
 -- This function is called after the job completes or is cancelled
 -- not quite sure what 'hurry' is ?
 function slurm_bb_job_teardown(job_id, job_script, hurry, uid, gid)
-	slurm.log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
+	safe_log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script, hurry, uid, gid)
 
 	return call_plugins("bb_job_teardown", job_id, job_script, hurry, uid, gid)
@@ -127,7 +140,7 @@ end
 --
 -- This function is called while the job is pending and will create the burst buffers for the job
 function slurm_bb_setup(job_id, uid, gid, pool, bb_size, job_script, job_info)
-	slurm.log_info("%s: slurm_bb_setup(). job id:%s, uid: %s, gid:%s, pool:%s, size:%s, job script:%s",
+	safe_log_info("%s: slurm_bb_setup(). job id:%s, uid: %s, gid:%s, pool:%s, size:%s, job script:%s",
 		lua_script_name, job_id, uid, gid, pool, bb_size, job_script)
 
 	return call_plugins("bb_setup", job_id, uid, gid, pool, bb_size, job_script, job_info)
@@ -141,7 +154,7 @@ end
 -- The file specfied by path_file is an empty file that must be filled with
 -- the environment variables needed by the job
 function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",
+	safe_log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script, path_file, uid, gid)
 
 
@@ -200,7 +213,7 @@ end
 -- returns slurm.ERROR, then this function's second return value is ignored and
 -- an error message will be printed instead.
 function slurm_bb_get_status(uid, gid, ...)
-	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
+	safe_log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
 		lua_script_name, uid, gid)
 
 	return call_plugins("bb_get_status", uid, gid, ...)
