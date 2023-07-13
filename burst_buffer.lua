@@ -1,6 +1,10 @@
 -- Copyright (C) Bull S.A.S
 --
-
+-- This is intended to be a global burst_buffer.lua file for the Lua Burst Buffer plugin
+-- of Slurm. Its goal is to route slurm calls to several vendor-provided implementations
+-- of the Lua Burst Buffer interface, so several vendors of burst buffers can coexist
+-- on a single Slurm instance.
+--
 -- Add your plugin name here:
 plugins = {
 	"flash_accelerators",
