@@ -11,7 +11,7 @@ slurm_lua_root = os.getenv("SLURM_LUA_ROOT")
 if (slurm_lua_root == nil) then
 	slurm_lua_root = "/etc/slurm"
 end
-plugins_dir = "bb" -- subdirectory in slurm_lua_root where the scripts are
+plugins_dir = "bb" -- subdirectory in slurm_lua_root where the Lua scripts are
 
 -- Each "plugin" is a lua module.
 -- The plugin "foo" must be in the directory $plugins_dir/foo and have a main file foo.lua which
@@ -27,7 +27,7 @@ plugins_dir = "bb" -- subdirectory in slurm_lua_root where the scripts are
 -- 		slurm_bb_data_out
 -- 		slurm_bb_get_status
 --
--- 	All these functions same parameters as the corresponding function called by slurm
+-- 	All these functions have the same parameters as the corresponding function called by slurm
 -- 	except:
 -- 	- slurm_bb_paths() which gets a dict instead of the path_file. See comment
 -- 	  in slurm_bb_paths() below.
@@ -39,9 +39,9 @@ plugins_dir = "bb" -- subdirectory in slurm_lua_root where the scripts are
 --
 -- 	Functions must NOT block. If they need to wait for outside events, they may call:
 --
--- 		coroutine.yield(sched.CO_YIELD, { list of fds to poll for read (possibly empty) })
+-- 		coroutine.yield(bb_sched.CO_YIELD, { list of fds to poll for read (possibly empty) })
 --
--- 	sched.CO_YIELD is defined in bb/bb_sched.lua
+-- 	bb_sched.CO_YIELD is defined in bb/bb_sched.lua
 --
 
 package.path = slurm_lua_root .. "/bb/?.lua;" .. package.path
@@ -173,7 +173,7 @@ function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
 	-- plugins might want to touch the same variables, for instance, $PATH
 	-- So, rather than having each plugin simply writing its vars to path_file,
 	-- we setup a dict. plugins that want to touch a "common" variable must check
-	-- if the variable already exists and modify them, rather than simply overwriting them.
+	-- if the variable already exists and modify it, rather than simply overwriting it.
 	local export_vars = {}
 	local rc, output = call_plugins("bb_paths", job_id, job_script, export_vars, uid, gid, job_info)
 

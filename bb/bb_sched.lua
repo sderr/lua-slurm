@@ -2,13 +2,13 @@
 --
 
 
-local sched={}
+local bb_sched={}
 
 -- A few constants:
-sched.POLL_PERIOD=5000 -- ms
-sched.CO_YIELDS = 1
-sched.CO_DONE = 2
-sched.CO_ERROR = 3
+bb_sched.POLL_PERIOD=5000 -- ms
+bb_sched.CO_YIELDS = 1
+bb_sched.CO_DONE = 2
+bb_sched.CO_ERROR = 3
 
 -- Run a command, synchronously
 -- @param argv A table with the command and its parameters. argv[1] is the command
@@ -16,13 +16,13 @@ sched.CO_ERROR = 3
 --
 -- If the command was killed, exit_status is -signum
 --
--- Note: This function is non-blocking and will yield when needed. In that case if will
+-- Note: This function is non-blocking and will yield when needed. In that case it will
 -- yield 2 values: CO_YIELDS, { fd }
 -- where fd can be polled.
 --
 -- Note: There is no clear error if the command fails to execute. There will simply be no
 -- output and an exit status of 2.
-function sched.run_synchronous_command(argv)
+function bb_sched.run_synchronous_command(argv)
 	local popen = require("posix").popen
 	local rpoll = require("posix.poll").rpoll
 	local read = require("posix.unistd").read
@@ -40,7 +40,7 @@ function sched.run_synchronous_command(argv)
 			if (ret == 1) then
 				break
 			else
-				coroutine.yield(sched.CO_YIELDS, { fd })
+				coroutine.yield(bb_sched.CO_YIELDS, { fd })
 			end
 		end
 		local r = read(fd, N)
@@ -60,7 +60,7 @@ function sched.run_synchronous_command(argv)
 	return output, rc
 end
 
-function sched.table_empty(t)
+function bb_sched.table_empty(t)
 	return next(t) == nil
 end
 
@@ -84,19 +84,19 @@ end
 --  - when one of the file descriptors of a task becomes readable (new data). Tasks functions
 --    must yield(CO_YIELDS, { list of fds to poll })
 --  - or after a periodic timeout of POLL_PERIOD ms
-function sched.run_tasks_once(tasks_todo, tasks_done)
+function bb_sched.run_tasks_once(tasks_todo, tasks_done)
 	local fds = {}
 	for name, task in pairs(tasks_todo) do -- don't use ipairs() here because we remove items
 		local ok, val1, val2 = coroutine.resume(task["thread"])
 		if (ok) then
 			local done = val1
 			local result = val2
-			if (done == sched.CO_DONE) then
+			if (done == bb_sched.CO_DONE) then
 				tasks_todo[name] = nil -- remove that thread from the list
 				task["result"] = result
-				task["state"] = sched.CO_DONE
+				task["state"] = bb_sched.CO_DONE
 				tasks_done[name] = task
-			elseif (done == sched.CO_YIELDS) then
+			elseif (done == bb_sched.CO_YIELDS) then
 				-- When a coroutine yields, it gives us
 				-- file descriptors to poll
 				for _, fd in ipairs(result) do
@@ -106,14 +106,14 @@ function sched.run_tasks_once(tasks_todo, tasks_done)
 				local U = require("bb_utils")
 				U.trace("SCHEDULER: bad value from %s: %s ", name, U.dump(done))
 				tasks_todo[name] = nil -- remove that thread from the list
-				task["state"] = sched.CO_ERROR
+				task["state"] = bb_sched.CO_ERROR
 				task["error"] = "bad value"
 				tasks_done[name] = task
 			end
 		else
 			local errmsg = val1
 			tasks_todo[name] = nil -- remove that thread from the list
-			task["state"] = sched.CO_ERROR
+			task["state"] = bb_sched.CO_ERROR
 			task["error"] = errmsg
 			tasks_done[name] = task
 		end
@@ -126,7 +126,7 @@ end
 -- @param   name          Name of the task. MUST BE UNIQUE.
 -- @param   func          Function to execute
 -- @param   ...           Parameters to the function
-function sched.add_task(tasks_todo, name, func, ...)
+function bb_sched.add_task(tasks_todo, name, func, ...)
 	if (tasks_todo[name] ~= nil) then
 		error("add_task(): a task named " .. name .. " already exists")
 	end
@@ -134,7 +134,7 @@ function sched.add_task(tasks_todo, name, func, ...)
 	local func_with_args = function()
 		-- The function may return multiple values,
 		-- pack them for storage
-		return sched.CO_DONE, table.pack(func(table.unpack(args)))
+		return bb_sched.CO_DONE, table.pack(func(table.unpack(args)))
 	end
 	local task = {
 		thread = coroutine.create(func_with_args)
@@ -145,9 +145,9 @@ end
 -- Run a list of tasks, once, and waits...
 -- + either until theres's some input data in one for the file descriptors yielded by the tasks
 -- + or until a polling timeout expires.
-function sched.schedule_main(tasks_todo, tasks_done)
-	local fds = sched.run_tasks_once(tasks_todo, tasks_done)
-	if (sched.table_empty(tasks_todo)) then
+function bb_sched.schedule_main(tasks_todo, tasks_done)
+	local fds = bb_sched.run_tasks_once(tasks_todo, tasks_done)
+	if (bb_sched.table_empty(tasks_todo)) then
 		return true -- done
 	end
 
@@ -156,34 +156,34 @@ function sched.schedule_main(tasks_todo, tasks_done)
 	for i,fd in ipairs(fds) do
 		pollin[fd] = {events={IN=true}}
 	end
-	poll(pollin, sched.POLL_PERIOD)
+	poll(pollin, bb_sched.POLL_PERIOD)
 
 	return false  -- there's work left to do
 end
 
 -- Run a list for tasks until completion, for the main scheduler.
 -- Returns the list of completed tasks
-function sched.run_main_tasks(tasks_todo)
+function bb_sched.run_main_tasks(tasks_todo)
 	local tasks_done = {}
 
 	repeat
-	until (sched.schedule_main(tasks_todo, tasks_done))
+	until (bb_sched.schedule_main(tasks_todo, tasks_done))
 
 	return tasks_done
 end
 
 -- Run a list for tasks until completion, for a sub-scheduler.
 -- Returns the list of completed tasks
-function sched.run_sub_tasks(tasks_todo)
+function bb_sched.run_sub_tasks(tasks_todo)
 	local tasks_done = {}
 
 	while true do
-		local fds = sched.run_tasks_once(tasks_todo, tasks_done)
-		if (sched.table_empty(tasks_todo)) then
+		local fds = bb_sched.run_tasks_once(tasks_todo, tasks_done)
+		if (bb_sched.table_empty(tasks_todo)) then
 			return tasks_done
 		end
-		coroutine.yield(sched.CO_YIELDS, fds)
+		coroutine.yield(bb_sched.CO_YIELDS, fds)
 	end
 end
 
-return sched
+return bb_sched

@@ -6,7 +6,7 @@ local ex1 = {}
 
 local ex1_core = require("ex1_core")
 
--- This should parse the job script and check whether this plugins
+-- This should parse the job script and check whether this plugin
 -- is requested and what it needs to do
 function ex1.parse_job_script(job_script)
 	-- should grep job_script for #BB_LUA EXAMPLE1 and return true only if found
