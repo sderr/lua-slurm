@@ -7,8 +7,8 @@
 --
 -- Add your plugin name here:
 plugins = {
-	"flash_accelerators",
-	--"example1",
+	--"flash_accelerators",
+	"example1",
 }
 
 slurm_lua_root = os.getenv("SLURM_LUA_ROOT")
