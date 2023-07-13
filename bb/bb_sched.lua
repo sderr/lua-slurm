@@ -65,9 +65,13 @@ function bb_sched.table_empty(t)
 end
 
 -- Run all runnable tasks, once.
--- Tasks which end are moved from tasks_todo to tasks_done
--- @param tasks_todo Table with tasks to run
--- @param tasks_done Table with the tasks which ended
+--
+-- @param[in,out]   tasks_todo    The list of active tasks to run
+-- @param[in,out]   tasks_done    The list of completed tasks
+--
+-- Both tasks_todo and tasks_done are updated each time a task completes.
+-- Tasks which end are moved from tasks_todo to tasks_done.
+--
 -- @return list of fds to poll
 --
 -- A task is a table which looks like this: {
@@ -78,12 +82,6 @@ end
 -- }
 --
 -- The tasks are stored in a table, indexed by a per-task name, that must be unique.
---
--- After running the tasks, this function will block until there is again something to do.
--- This happens either:
---  - when one of the file descriptors of a task becomes readable (new data). Tasks functions
---    must yield(CO_YIELDS, { list of fds to poll })
---  - or after a periodic timeout of POLL_PERIOD ms
 function bb_sched.run_tasks_once(tasks_todo, tasks_done)
 	local fds = {}
 	for name, task in pairs(tasks_todo) do -- don't use ipairs() here because we remove items
@@ -143,8 +141,22 @@ function bb_sched.add_task(tasks_todo, name, func, ...)
 end
 
 -- Run a list of tasks, once, and waits...
--- + either until there's some input data in one of the file descriptors yielded by the tasks
--- + or until a polling timeout expires.
+--
+-- After running the tasks, this function will block until there is again something to do.
+-- This happens either:
+--
+--  - when one of the file descriptors of a task becomes readable (new data). For this to work,
+--    tasks functions must yield(CO_YIELDS, { list of fds to poll })
+--
+--  - or after a periodic timeout of POLL_PERIOD ms
+--
+-- @param[in,out]   tasks_todo    The list of active tasks to run
+-- @param[in,out]   tasks_done    The list of completed tasks
+--
+-- Both tasks_todo and tasks_done are updated each time a task ends.
+--
+-- @return true if all tasks have ended
+--         false if there are still active tasks
 function bb_sched.schedule_main(tasks_todo, tasks_done)
 	local fds = bb_sched.run_tasks_once(tasks_todo, tasks_done)
 	if (bb_sched.table_empty(tasks_todo)) then
