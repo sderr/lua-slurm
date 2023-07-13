@@ -19,6 +19,24 @@ function bb_utils.safe_strcat(...)
 	return res
 end
 
+-- Add output from a task while taking care of newlines
+-- The various tasks executed by the plugins will sometimes return a single
+-- line (or error message) not newline-terminated, and sometimes (especially bbstat)
+-- several lines newline-terminated. This function makes sure we add a newline
+-- between the tasks outputs only if needed. This function also properly
+-- handles the case where new_res is nil.
+function bb_utils.append_str_output(global_res, new_res)
+	if (new_res == nil) then
+		return global_res
+	end
+	if (global_res == "" or string.sub(global_res, -1) == "\n") then
+		return global_res .. new_res
+	else
+		return global_res .. "\n" .. new_res
+	end
+end
+
+
 
 -- Helper for bb_utils.dump() below
 function bb_utils.dumpi(indent, o)

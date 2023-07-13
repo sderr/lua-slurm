@@ -58,6 +58,7 @@ local function load_plugin(plugin_name)
 end
 
 local function call_plugins(function_name, ...)
+	local bb_utils = require("bb_utils")
 	local sched = require("bb_sched")
 	local tasks_todo = {}
 	for _, plugin_name in ipairs(plugins) do
@@ -79,6 +80,8 @@ local function call_plugins(function_name, ...)
 	local tasks_done = sched.run_main_tasks(tasks_todo)
 
 	local all_output = ""
+	local all_errors = ""
+	local failures = 0
 	for name, task in pairs(tasks_done) do
 		-- first check any possible lua runtime error in that task
 		local state = task["state"]
@@ -86,26 +89,32 @@ local function call_plugins(function_name, ...)
 			local errmsg = task["error"]
 			slurm.log_error("lua/%s: task %s failed: %s",
 				function_name, name, errmsg)
-			return slurm.ERROR, errmsg
-		end
-
-		-- unpack the task result and add it to the global output
-		local result = task["result"]
-		local rc, msg = table.unpack(result)
-		if (rc == slurm.ERROR) then
-			return rc, msg
-		elseif (rc == slurm.SUCCESS) then
-			if (msg) then
-				all_output = all_output .. msg
-			end
+			all_errors = bb_utils.append_str_output(all_errors, errmsg)
+			failures = failures + 1
 		else
-			local errmsg = string.format("lua/%s: task %s returned %s instead of slurm.SUCCESS or slurm.ERROR",
-				function_name, name, tostring(rc))
-			slurm.log_error(errmsg)
-			return slurm.ERROR, errmsg
+			-- unpack the task result and add it to the global output
+			local result = task["result"]
+			local rc, msg = table.unpack(result)
+			if (rc == slurm.ERROR) then
+				all_errors = bb_utils.append_str_output(all_errors, msg)
+				failures = failures + 1
+			elseif (rc == slurm.SUCCESS) then
+				all_output = bb_utils.append_str_output(all_output, msg)
+			else
+				local errmsg = string.format("lua/%s: task %s returned %s instead of slurm.SUCCESS or slurm.ERROR",
+					function_name, name, tostring(rc))
+				slurm.log_error(errmsg)
+				all_errors = bb_utils.append_str_output(all_errors, errmsg)
+				failures = failures + 1
+			end
 		end
 	end
-	return slurm.SUCCESS, all_output
+
+	if (failures > 0) then
+		return slurm.ERROR, all_errors
+	else
+		return slurm.SUCCESS, all_output
+	end
 end
 
 lua_script_name="burst_buffer.lua" -- for tracing purposes
