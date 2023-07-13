@@ -6,20 +6,11 @@ function bb_utils.trace(fmt, ...)
 	slurm.log_info("BB_LUA: %s", str)
 end
 
-function bb_utils.table_len(t)
-	local count = 0
-	for _ in pairs(t) do
-		count = count + 1
-	end
-	return count
-end
-
 -- strcat all parameters
 function bb_utils.safe_strcat(...)
 	local res = ""
 	local args = table.pack(...)
-	local len = bb_utils.table_len(args)
-	for i=1,len do
+	for i=1,args.n do
 		local v = args[i]
 		if (v) then
 			res = res .. v
