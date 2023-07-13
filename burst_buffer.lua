@@ -168,8 +168,9 @@ end
 
 -- slurm_bb_job_teardown
 --
--- This function is called after the job completes or is cancelled
--- not quite sure what 'hurry' is ?
+-- This function is called after the job completes, is cancelled, or after errors in
+-- other burst buffer functions.
+-- The parameter 'hurry' will be set to true if the job was not able to complete properly
 function slurm_bb_job_teardown(job_id, job_script, hurry, uid, gid)
 	safe_log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script, hurry, uid, gid)
