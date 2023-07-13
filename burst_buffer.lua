@@ -17,32 +17,53 @@ plugins_dir = "bb" -- subdirectory in slurm_lua_root where the Lua scripts are
 -- The plugin "foo" must be in the directory $plugins_dir/foo and have a main file foo.lua which
 -- implements some of these functions:
 --
--- 		slurm_bb_job_process
--- 		slurm_bb_job_teardown
--- 		slurm_bb_setup
--- 		slurm_bb_paths
--- 		slurm_bb_data_in
--- 		slurm_bb_pre_run
--- 		slurm_bb_post_run
--- 		slurm_bb_data_out
--- 		slurm_bb_get_status
+--         slurm_bb_job_process
+--         slurm_bb_job_teardown
+--         slurm_bb_setup
+--         slurm_bb_paths
+--         slurm_bb_data_in
+--         slurm_bb_pre_run
+--         slurm_bb_post_run
+--         slurm_bb_data_out
+--         slurm_bb_get_status
 --
--- 	All these functions have the same parameters as the corresponding function called by slurm
--- 	except:
--- 	- slurm_bb_paths() which gets a dict instead of the path_file. See comment
--- 	  in slurm_bb_paths() below.
+-- All these functions have the same parameters as the corresponding function called by slurm
+-- except:
+-- - slurm_bb_paths() which gets a dict instead of the path_file. See comment
+--   in slurm_bb_paths() below.
 --
--- 	The functions are supposed to return slurm.SUCCESS (and possibly a message),
--- 	or slurm.ERROR with an error message
+-- The functions are supposed to return slurm.SUCCESS (and possibly a message),
+-- or slurm.ERROR with an error message
 --
--- 	All functions are optional.
+-- All functions are optional.
 --
--- 	Functions must NOT block. If they need to wait for outside events, they may call:
+-- Functions must NOT block. If they need to wait for outside events, they may call:
 --
--- 		coroutine.yield(bb_sched.CO_YIELD, { list of fds to poll for read (possibly empty) })
+--     coroutine.yield(bb_sched.CO_YIELD, { list of fds to poll for read (possibly empty) })
 --
--- 	bb_sched.CO_YIELD is defined in bb/bb_sched.lua
+-- bb_sched.CO_YIELD is defined in bb/bb_sched.lua
 --
+-- 
+-- Some of these functions are synchronous (called directly from the main
+-- slurmctld thread) and must return quickly. Others are asynchronous (called from a
+-- separate thread in slurmscriptd) and can take longer. Note however that the burst buffer
+-- Lua plugin will still impose timeouts.
+--
+-- Synchronous functions:
+--      slurm_bb_job_process
+--      slurm_bb_paths
+--
+-- Asynchronous functions:
+--      slurm_bb_setup             (OtherTimeout, default 5 min)
+--      slurm_bb_data_in           (StageInTimeout, default 1 day)
+--      slurm_bb_pre_run           (OtherTimeout)
+--      slurm_bb_post_run          (OtherTimeout)
+--      slurm_bb_data_out          (StageOutTimeout, default 1 day)
+--      slurm_bb_job_teardown      (OtherTimeout)
+--      slurm_bb_get_status        (OtherTimeout)
+--
+--      slurm_bb_real_size (currently not used) (OtherTimeout)
+--      slurm_bb_pools     (currently not used) (OtherTimeout)
 
 package.path = slurm_lua_root .. "/bb/?.lua;" .. package.path
 
