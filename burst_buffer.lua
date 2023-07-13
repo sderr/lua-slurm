@@ -48,7 +48,7 @@ package.path = slurm_lua_root .. "/bb/?.lua;" .. package.path
 
 ---------------- No user serviceable parts below (hopefully) ------------
 
-function load_plugin(plugin_name)
+local function load_plugin(plugin_name)
 	local prev_path = package.path
 	local U = require("bb_utils")
 	package.path = U.safe_strcat(slurm_lua_root, "/", plugins_dir, "/", plugin_name, "/?.lua;", package.path)
@@ -57,7 +57,7 @@ function load_plugin(plugin_name)
 	return mod
 end
 
-function call_plugins(function_name, ...)
+local function call_plugins(function_name, ...)
 	local sched = require("bb_sched")
 	local tasks_todo = {}
 	for _, plugin_name in ipairs(plugins) do
