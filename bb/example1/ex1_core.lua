@@ -68,16 +68,13 @@ end
 -- except it must not wait or poll itself. It must define several tasks, and
 -- use sched.run_sub_tasks() to run them.
 function ex1_core.stop_bb()
-	local objectA = { "hello" }
-	local objectB = { "world" }
 	local tasks_todo = {}
 
 	local sched = require("bb_sched")
-	-- each tasks takes an "owner", which can be anything you want, a
-	-- name, which must be unique in this list, a function to run,
+	-- each tasks takes a name, which must be unique in this list, a function to run,
 	-- and the parameters to that function
-	sched.add_task(tasks_todo, objectA, "stop_A", ex1_core.stop_A, "4")
-	sched.add_task(tasks_todo, objectB, "stop_B", ex1_core.stop_B, "6")
+	sched.add_task(tasks_todo, "stop_A", ex1_core.stop_A, "4")
+	sched.add_task(tasks_todo, "stop_B", ex1_core.stop_B, "6")
 
 	local tasks_done = sched.run_sub_tasks(tasks_todo)
 

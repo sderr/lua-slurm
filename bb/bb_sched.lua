@@ -72,7 +72,6 @@ end
 --
 -- A task is a table which looks like this: {
 --     thread = coroutine created
---     owner = the plugin this task belongs to
 --     result = after completion, the return value of the task
 --     state = after completion, CO_DONE, or CO_ERROR in case of a Lua error
 --     error = In case of Lua error, the error message
@@ -124,11 +123,10 @@ end
 
 -- Add a task to a list of tasks
 -- @param   tasks_todo    The list of tasks
--- @param   owner         Anything. Will be passed as task["owner"] for your convenience.
 -- @param   name          Name of the task. MUST BE UNIQUE.
 -- @param   func          Function to execute
 -- @param   ...           Parameters to the function
-function sched.add_task(tasks_todo, owner, name, func, ...)
+function sched.add_task(tasks_todo, name, func, ...)
 	if (tasks_todo[name] ~= nil) then
 		error("add_task(): a task named " .. name .. " already exists")
 	end
@@ -139,7 +137,6 @@ function sched.add_task(tasks_todo, owner, name, func, ...)
 		return sched.CO_DONE, table.pack(func(table.unpack(args)))
 	end
 	local task = {
-		owner = owner,
 		thread = coroutine.create(func_with_args)
 	}
 	tasks_todo[name] = task

@@ -3,8 +3,8 @@
 
 -- Add your plugin name here:
 plugins = {
-	--"flash_accelerators",
-	"example1",
+	"flash_accelerators",
+	--"example1",
 }
 
 plugins_dir = "bb"
@@ -60,7 +60,7 @@ function call_plugins(function_name, ...)
 		local plugin = load_plugin(plugin_name)
 		local func = plugin[function_name]
 		if (func) then
-			sched.add_task(tasks_todo, plugin, plugin_name, func, ...)
+			sched.add_task(tasks_todo, plugin_name, func, ...)
 		end
 	end
 
